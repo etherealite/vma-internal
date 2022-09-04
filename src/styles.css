@@ -1,0 +1,53 @@
+/**
+ * Event Listing Archive pages
+ */
+.vma-event-hero {
+
+}
+.vma-event-sidebar {
+    margin-bottom: 10%;
+}
+.vma-event-archive-title__text {
+    margin-bottom: 20px;
+    line-height: 1em;
+}
+
+.vma-event-archive-title__description,
+.vma-event-archive-title__description p {
+    font-size: 24px;
+}
+
+.wpem-container {
+    padding-top: 60px;
+}
+
+.wpem-event-listing-type-page .wpem-event-listing-type-page-wrapper {
+    margin-top: 0;
+}
+
+.wpem-event-listing-type-page-title {
+    margin-top: 0;
+}
+
+
+/**
+ * Breakpoints for WP Event Manager bundled CSS framework
+ *  * sm   576px
+ *  * md   768px
+ *  * lg   992px
+ *  * xl   1200px
+ *  * 
+ */
+@media screen and (min-width: 576px) {
+
+}
+@media screen and (min-width: 768px) {
+}
+@media screen and (min-width: 992px) {
+    .vma-event-sidebar {
+        padding: 0 6%;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+}
