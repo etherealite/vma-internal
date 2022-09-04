@@ -1,9 +1,6 @@
 /**
  * Event Listing Archive pages
  */
-.vma-event-hero {
-
-}
 .vma-event-sidebar {
     margin-bottom: 10%;
 }
@@ -38,16 +35,11 @@
  *  * xl   1200px
  *  * 
  */
-@media screen and (min-width: 576px) {
-
-}
-@media screen and (min-width: 768px) {
-}
+@media screen and (min-width: 576px) {}
+@media screen and (min-width: 768px) {}
 @media screen and (min-width: 992px) {
     .vma-event-sidebar {
         padding: 0 6%;
     }
 }
-
-@media screen and (min-width: 1200px) {
-}
+@media screen and (min-width: 1200px) {}

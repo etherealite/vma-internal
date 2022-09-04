@@ -3,7 +3,7 @@
  * Plugin Name: VMA Internal Plugin
  * Description: General purpose plugin for site specific integrations.
  * Author: Evan Bangham
- * Version: 0.0.1
+ * Version: 0.0.2
  * Author URI: https://github.com/etherealite
  *
  * Text Domain: VMA
@@ -12,7 +12,7 @@
 
 class Vma_Internal {
 
-    public const VERSION = '0.0.1';
+    public const VERSION = '0.0.2';
 
     private string $path;
 
@@ -20,11 +20,10 @@ class Vma_Internal {
         $this->path = $pluginPath;
     }
 
-    public static function bootstrap(): self
+    public static function bootstrap(): void
     {
         $instance = new static(__DIR__);
         $instance->register();
-        return $instance;
     }
 
     public function register(): void
@@ -55,8 +54,9 @@ class Vma_Internal {
     ): array
     {
         $rewrite = [
+            'slug' => 'events/category',
             'with_front'   => false,
-            'hierarchical' => false
+            'hierarchical' => false,
         ];
         $args['rewrite'] = $rewrite;
 
@@ -68,6 +68,7 @@ class Vma_Internal {
     ): array 
     {
         $rewrite = [
+            'slug' => 'events/type',
             'with_front'   => false,
             'hierarchical' => false
         ];
@@ -81,15 +82,10 @@ class Vma_Internal {
 
         // Look for tempaltes in theme on the passed path
 
-        $themeTemplate = locate_template(
-
-            array(
-
+        $themeTemplate = locate_template([
                 trailingslashit($template_path) . $template_name,
-
                 $template_name
-            )
-        );
+        ]);
 
         if($themeTemplate) {
             return $themeTemplate;
@@ -153,16 +149,16 @@ class Vma_Internal {
 
 
 (function() {
-    $instance = Vma_Internal::bootstrap();
+    Vma_Internal::bootstrap();
 
-    register_deactivation_hook(__FILE__, function() use($instance) {
+    register_deactivation_hook(__FILE__, function() {
         delete_option('rewrite_rules');
     });
 
     register_activation_hook(__FILE__, function() {
-        add_action('init', function() {
-            flush_rewrite_rules();
-        }, 10);
+        unregister_post_type('event_listing');
+        WP_Event_Manager_Post_Types::instance()->register_post_types();
+        flush_rewrite_rules();
     });
 })();
 
