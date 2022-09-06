@@ -11,10 +11,10 @@
                 <div class="wpem-event-layout-action-wrapper">
                     <div class="wpem-event-layout-action">
                         <?php do_action('start_event_listing_layout_icon'); ?>
-                        <?php if (! (is_tax('event_listing_category') || is_tax('event_listing_type'))): ?>
+                        <!--
                             <div class="wpem-event-layout-icon wpem-event-box-layout" title="<?php _e('Events Box View', 'wp-event-manager'); ?>" id="wpem-event-box-layout"><i class="wpem-icon-stop2"></i></div>
                             <div class="wpem-event-layout-icon wpem-event-list-layout wpem-active-layout" title="<?php _e('Events List View', 'wp-event-manager'); ?>" id="wpem-event-list-layout"><i class="wpem-icon-menu"></i></div>
-                        <?php endif; ?>
+                        -->
                             <?php do_action('end_event_listing_layout_icon'); ?>
                     </div>
                 </div>

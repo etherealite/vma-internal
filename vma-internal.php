@@ -3,7 +3,7 @@
  * Plugin Name: VMA Internal Plugin
  * Description: General purpose plugin for site specific integrations.
  * Author: Evan Bangham
- * Version: 0.0.2
+ * Version: 0.0.3
  * Author URI: https://github.com/etherealite
  *
  * Text Domain: VMA
@@ -12,9 +12,10 @@
 
 class Vma_Internal {
 
-    public const VERSION = '0.0.2';
+    public const VERSION = '0.0.3';
 
     private string $path;
+    private $kadenceTheme;
 
     public function __construct($pluginPath) {
         $this->path = $pluginPath;
@@ -39,6 +40,11 @@ class Vma_Internal {
         10, 1);
 
         add_filter(
+            'register_post_type_event_listing',
+            [$this, 'filter_register_post_type_event_listing'],
+        10, 1);
+
+        add_filter(
             'event_manager_locate_template',
             [$this, 'filter_event_manager_locate_template'],
         10, 3);
@@ -47,6 +53,12 @@ class Vma_Internal {
             'plugins_loaded',
             [$this, 'action_plugins_loaded'],
         10, 0);
+
+        add_action(
+            'init',
+            [$this, 'action_init'],
+        10, 0);
+
     }
 
     public function filter_register_taxonomy_event_listing_category_args(
@@ -73,6 +85,14 @@ class Vma_Internal {
             'hierarchical' => false
         ];
         $args['rewrite'] = $rewrite;
+        return $args;
+    }
+
+    public function filter_register_post_type_event_listing(
+        array $args
+    ): array {
+        $args['rewrite']['slug'] = 'events';
+        $args['has_archive'] = true;
         return $args;
     }
 
@@ -113,8 +133,13 @@ class Vma_Internal {
 
         add_filter(
             'archive_template',
-            [$this, 'filter_archive_template']
-        );
+            [$this, 'filter_archive_template'],
+        20, 3);
+
+        add_filter(
+            'single_template',
+            [$this, 'filter_single_template'],
+        20, 3);
 
         add_action(
             'wp_enqueue_scripts', 
@@ -122,13 +147,28 @@ class Vma_Internal {
         50);
     }
 
-    public function filter_archive_template(): string
+    public function filter_single_template(
+        string $template, string $type, array $templates
+    ): string 
+    {   
+
+        if (is_singular('event_listing')) {
+            $template = $this->path . '/src/event-templates/single-event_listing.php';
+        }
+        
+        return $template;
+    }
+
+
+    public function filter_archive_template(
+        string $template, string $type, array $templates
+    ): string
     {
-		if (is_tax( 'event_listing_category')) {
+		if (is_tax('event_listing_category')) {
 
 			$template = $this->path . '/src/event-templates/content-event_listing_category.php';
 	    }
-	    elseif (is_tax( 'event_listing_type')) {
+	    elseif (is_tax('event_listing_type')) {
 
 			$template = $this->path . '/src/event-templates/content-event_listing_type.php';
 	    }
@@ -144,6 +184,15 @@ class Vma_Internal {
             [],
             static::VERSION
         );
+    }
+
+    public function action_init(): void
+    {
+        if (defined('KADENCE_VERSION')) {
+            include __DIR__ . '/src/KadenceTheme.php';
+            $kadence = new \VmaInternal\KadenceTheme();
+            $kadence->register();
+        };
     }
 }
 
