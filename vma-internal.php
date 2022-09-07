@@ -21,10 +21,11 @@ class Vma_Internal {
         $this->path = $pluginPath;
     }
 
-    public static function bootstrap(): void
+    public static function bootstrap(): self
     {
         $instance = new static(__DIR__);
         $instance->register();
+        return $instance;
     }
 
     public function register(): void
@@ -142,9 +143,9 @@ class Vma_Internal {
         20, 3);
 
         add_action(
-            'wp_enqueue_scripts', 
+            'wp_head', 
             [$this, 'action_wp_enqueue_scripts'],
-        50);
+            PHP_INT_MAX);
     }
 
     public function filter_single_template(
@@ -196,12 +197,27 @@ class Vma_Internal {
             $kadence->register();
         };
     }
+
+    public function asset_url($file): string
+    {
+        return plugin_dir_url(__FILE__) . 'assets/' . $file;
+    }
 }
 
 
-(function() {
-    Vma_Internal::bootstrap();
+function VmaInt(): Vma_Internal {
+    static $instance;
+    if ($instance) {
+        return $instance;
+    }
 
+    $instance = Vma_Internal::bootstrap();
+
+    return $instance;
+}
+
+(function() {
+    VmaInt();
     register_deactivation_hook(__FILE__, function() {
         delete_option('rewrite_rules');
     });

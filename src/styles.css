@@ -9,16 +9,19 @@
     font-weight: 400;
 }
 
-body .wpem-container {
+.vma-event-full-width-wrap {
     padding-top: 60px;
-    display: block;
+    background-position: bottom left;
+    background-repeat: no-repeat;
+    opacity: 1;
+    transition: background 0.3s, border-radius 0.3s, opacity 0.3s;
 }
 
 /** 
  * Event sidebar component
  */
 .vma-event-sidebar {
-    margin-bottom: 10%;
+    margin-bottom: 60px;
     line-height: inherit;
 }
 /** Elementor delayed CSS application glitches */
@@ -37,11 +40,20 @@ body .wpem-container {
 
 
 /**
+* Closing Hero component
+*/
+.vma-event-bottom-hero {
+    overflow: hidden;
+}
+
+
+/**
  * Event Listing Post Type Archive
  */
 .post-type-archive .wpem-event-listing-type-page-title {
     display: none;
 }
+
 
 /**
  * Event Listing Archive pages / single event container
@@ -56,7 +68,9 @@ body .wpem-container {
     font-size: 24px;
 }
 
-
+.wpem-event-listing-list-view.wpem-event-listings .wpem-event-layout-wrapper .event_listing {
+    background-color: white;
+}
 .wpem-event-listing-type-page .wpem-event-listing-type-page-wrapper {
     margin-top: 0;
 }
@@ -92,6 +106,7 @@ body.single-event_listing .wpem-event-listing-type-page-title {
 @media screen and (min-width: 992px) {
     .vma-event-sidebar {
         padding: 0 6%;
+        margin-bottom: 60px;
     }
 }
 @media screen and (min-width: 1200px) {}

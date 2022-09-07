@@ -16,7 +16,8 @@ global $wp_query;
 <div class="vma-event-hero vma-event--after_style_load">
     <?php echo do_shortcode('[elementor-template id="30803"]'); ?>
 </div>
-<div class="wpem-container vma-event--after_style_load">
+<div class="vma-event-full-width-wrap vma-event--after_style_load" style="background-image: url(<?php echo VmaInt()->asset_url('orange-circle-pattern.png'); ?>)">
+<div class="wpem-container">
 <div class="wpem-main wpem-event-listing-type-page">
 <div class="wpem-row">
 
@@ -51,6 +52,7 @@ global $wp_query;
 </div>
 
 
+</div>
 </div>
 </div>
 </div>
