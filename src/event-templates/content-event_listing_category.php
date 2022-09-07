@@ -8,10 +8,15 @@ get_header();
 global $wp_query;
 ?>
 
-<div class="vma-event-hero">
+<style>
+    .vma-event--after_style_load {
+        visibility: none;
+    }
+</style>
+<div class="vma-event-hero vma-event--after_style_load">
     <?php echo do_shortcode('[elementor-template id="30803"]'); ?>
 </div>
-<div class="wpem-container">
+<div class="wpem-container vma-event--after_style_load">
 <div class="wpem-main wpem-event-listing-type-page">
 <div class="wpem-row">
 

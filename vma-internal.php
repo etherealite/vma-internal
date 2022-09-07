@@ -151,7 +151,6 @@ class Vma_Internal {
         string $template, string $type, array $templates
     ): string 
     {   
-
         if (is_singular('event_listing')) {
             $template = $this->path . '/src/event-templates/single-event_listing.php';
         }
@@ -172,6 +171,9 @@ class Vma_Internal {
 
 			$template = $this->path . '/src/event-templates/content-event_listing_type.php';
 	    }
+        elseif($templates[0] === 'archive-event_listing.php') {
+            $template = $this->path . '/src/event-templates/archive-event_listing.php';
+        }
 
 	    return $template;
     }

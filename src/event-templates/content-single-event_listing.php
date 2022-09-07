@@ -64,7 +64,7 @@ $event = $post;
 
                 <div class="wpem-single-event-body">
                     <div class="wpem-row">
-                        <div class="wpem-col-xs-12 wpem-col-sm-7 wpem-col-md-8 wpem-single-event-left-content">
+                        <div class="wpem-col-xs-12 wpem-col-sm-7 wpem-col-md-8 wpem-col-lg-7 wpem-col-xl-8  wpem-single-event-left-content">
                             <div class="wpem-single-event-short-info">
                                 <div class="wpem-event-details">
                                     <div class="wpem-event-title">
@@ -421,7 +421,7 @@ $event = $post;
                             <?php do_action('single_event_overview_after'); ?>
 
                         </div>
-                        <div class="wpem-col-xs-12 wpem-col-sm-5 wpem-col-md-4 wpem-single-event-right-content">
+                        <div class="wpem-col-xs-12 wpem-col-sm-5 wpem-col-md-4 wpem-col-lg-5 wpem-col-xl-4 wpem-single-event-right-content">
                             <div class="wpem-single-event-body-sidebar">
                                 <?php do_action('single_event_listing_button_start'); ?>
 

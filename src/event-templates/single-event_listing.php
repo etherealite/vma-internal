@@ -8,10 +8,15 @@ get_header();
 global $wp_query;
 ?>
 
-<div class="vma-event-hero">
+<style>
+    .vma-event--after_style_load {
+        visibility: hidden;
+    }
+</style>
+<div class="vma-event-hero vma-event--after_style_load">
     <?php echo do_shortcode('[elementor-template id="30803"]'); ?>
 </div>
-<div class="wpem-container">
+<div class="wpem-container vma-event--after_style_load">
 <div class="wpem-main wpem-event-listing-type-page">
 <div class="wpem-row">
 
@@ -29,7 +34,7 @@ global $wp_query;
 <div>
 <?php
     if ( is_404() ) {
-        do_action( 'vma_internal_404_content' );
+        do_action('vma_internal_404_content');
     } elseif ( have_posts() ) {
         while ( have_posts() ) {
             the_post();
@@ -40,7 +45,7 @@ global $wp_query;
             the_content();
         }
     } else {
-        get_template_part( 'template-parts/content/error' );
+        do_action('vma_internal_content_error');
     }
 ?>
 </div>

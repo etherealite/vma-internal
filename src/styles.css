@@ -1,9 +1,51 @@
-/**
- * Event Listing Archive pages
+/** 
+ * Event Listing Global styles
+ */
+:root {
+    --wpem-dark-color: var(--global-palette3);
+}
+
+.wpem-main b, .wpem-main strong {
+    font-weight: 400;
+}
+
+body .wpem-container {
+    padding-top: 60px;
+    display: block;
+}
+
+/** 
+ * Event sidebar component
  */
 .vma-event-sidebar {
     margin-bottom: 10%;
+    line-height: inherit;
 }
+/** Elementor delayed CSS application glitches */
+.vma-event-sidebar .jet-custom-nav > .jet-custom-nav__item > a {
+    transition: none;
+    background-color: initial;
+}
+
+
+/**
+ * Event card/list-item component
+ */
+.wpem-event-listings .wpem-event-layout-wrapper .wpem-event-infomation .wpem-event-date .wpem-event-date-type .wpem-from-date .wpem-date {
+    font-weight: 500;
+}
+
+
+/**
+ * Event Listing Post Type Archive
+ */
+.post-type-archive .wpem-event-listing-type-page-title {
+    display: none;
+}
+
+/**
+ * Event Listing Archive pages / single event container
+ */
 .vma-event-archive-title__text {
     margin-bottom: 20px;
     line-height: 1em;
@@ -14,9 +56,6 @@
     font-size: 24px;
 }
 
-.wpem-container {
-    padding-top: 60px;
-}
 
 .wpem-event-listing-type-page .wpem-event-listing-type-page-wrapper {
     margin-top: 0;
@@ -24,6 +63,19 @@
 
 .wpem-event-listing-type-page-title {
     margin-top: 0;
+}
+
+/**
+ * Event Listing Single Page
+ */
+.wpem-single-event-page .wpem-heading-text {
+    font-weight: 400;
+}
+.wpem-event-listings .wpem-event-layout-wrapper .wpem-event-infomation .wpem-event-details .wpem-event-title .wpem-heading-text {
+    font-weight: 400;
+}
+body.single-event_listing .wpem-event-listing-type-page-title {
+    display: none;
 }
 
 
@@ -43,3 +95,7 @@
     }
 }
 @media screen and (min-width: 1200px) {}
+
+body .vma-event--after_style_load {
+    visibility:visible;
+}
