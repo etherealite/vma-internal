@@ -91,7 +91,9 @@
 body.single-event_listing .wpem-event-listing-type-page-title {
     display: none;
 }
-
+.wpem-single-event-body-sidebar {
+    background-color: white;
+}
 
 /**
  * Breakpoints for WP Event Manager bundled CSS framework

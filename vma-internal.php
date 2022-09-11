@@ -1,9 +1,12 @@
 <?php
+
+use VmaInternal\WpEventManager;
+
 /**
  * Plugin Name: VMA Internal Plugin
  * Description: General purpose plugin for site specific integrations.
  * Author: Evan Bangham
- * Version: 0.0.3
+ * Version: 0.0.6
  * Author URI: https://github.com/etherealite
  *
  * Text Domain: VMA
@@ -12,7 +15,7 @@
 
 class Vma_Internal {
 
-    public const VERSION = '0.0.3';
+    public const VERSION = '0.0.5';
 
     private string $path;
     private $kadenceTheme;
@@ -23,12 +26,22 @@ class Vma_Internal {
 
     public static function bootstrap(): self
     {
+
         $instance = new static(__DIR__);
         $instance->register();
         return $instance;
     }
 
     public function register(): void
+    {
+        require __DIR__ . '/src/WpEventManager.php';
+        $eventManager = new WpEventManager();
+        $eventManager->register();
+        $this->addRootHooks();
+
+    }
+
+    public function addRootHooks(): void
     {
         add_filter(
             'register_taxonomy_event_listing_category_args', 
@@ -59,7 +72,6 @@ class Vma_Internal {
             'init',
             [$this, 'action_init'],
         10, 0);
-
     }
 
     public function filter_register_taxonomy_event_listing_category_args(
@@ -144,8 +156,13 @@ class Vma_Internal {
 
         add_action(
             'wp_head', 
-            [$this, 'action_wp_enqueue_scripts'],
-            PHP_INT_MAX);
+            [$this, 'action_wp_head'],
+        PHP_INT_MAX);
+
+        // add_action(
+        //     'wp_enqueue_scripts',
+        //     [$this, 'action_wp_enqueue_scripts'],
+        // 50, 0);
     }
 
     public function filter_single_template(
@@ -179,7 +196,16 @@ class Vma_Internal {
 	    return $template;
     }
 
-    public function action_wp_enqueue_scripts(): void
+    // public function action_wp_enqueue_scripts(): void
+    // {
+    //     $url = wc_get_checkout_url();
+    //     wp_add_inline_script(
+    //         'wp-event-manager-sell-tickets-sell-ticket',
+    //         "event_manager_sell_tickets_sell_ticket.redirectUrl='$url'"
+    //     );
+    // }
+
+    public function action_wp_head(): void
     {
         wp_enqueue_style(
             'vma-internal-frontend',
