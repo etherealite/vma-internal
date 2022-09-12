@@ -12,232 +12,110 @@ use VmaInternal\WpEventManager;
  * Text Domain: VMA
  **/
 
+use VmaInternal\PluginResources;
 
-class Vma_Internal {
+class Vma_Internal_Plugin {
 
-    public const VERSION = '0.0.5';
+    public const VERSION = '0.0.6';
 
-    private string $path;
-    private $kadenceTheme;
+    protected bool $booted = false;
+    private string $pluginPath;
+    private string $nonce;
 
-    public function __construct($pluginPath) {
-        $this->path = $pluginPath;
+    public function __construct($pluginPath)
+    {
+        $this->pluginPath = $pluginPath;
     }
 
-    public static function bootstrap(): self
+    public static function bootstrap($pluginPath): self
     {
+        require __DIR__ . '/src/PluginResources.php';
+        require __DIR__ . '/src/WpEventManager.php';
 
-        $instance = new static(__DIR__);
+        $instance = new static($pluginPath);
         $instance->register();
+
         return $instance;
     }
 
     public function register(): void
     {
-        require __DIR__ . '/src/WpEventManager.php';
+        $pluginResources = new PluginResources($this);
+
         $eventManager = new WpEventManager();
-        $eventManager->register();
-        $this->addRootHooks();
+        $eventManager->register($pluginResources);
 
+        add_action('init', [$this, 'action_init']);
     }
 
-    public function addRootHooks(): void
+    public function pluginPath(): string
     {
-        add_filter(
-            'register_taxonomy_event_listing_category_args', 
-            [$this, 'filter_register_taxonomy_event_listing_category_args'],
-        10, 1);
-
-        add_filter(
-            'register_taxonomy_event_listing_type_args', 
-            [$this, 'filter_register_taxonomy_event_listing_type_args'],
-        10, 1);
-
-        add_filter(
-            'register_post_type_event_listing',
-            [$this, 'filter_register_post_type_event_listing'],
-        10, 1);
-
-        add_filter(
-            'event_manager_locate_template',
-            [$this, 'filter_event_manager_locate_template'],
-        10, 3);
-
-        add_action(
-            'plugins_loaded',
-            [$this, 'action_plugins_loaded'],
-        10, 0);
-
-        add_action(
-            'init',
-            [$this, 'action_init'],
-        10, 0);
+        return $this->pluginPath;
     }
 
-    public function filter_register_taxonomy_event_listing_category_args(
-        array $args
-    ): array
+    public function boot(): void
     {
-        $rewrite = [
-            'slug' => 'events/category',
-            'with_front'   => false,
-            'hierarchical' => false,
-        ];
-        $args['rewrite'] = $rewrite;
-
-        return $args;
-    }
-
-    public function filter_register_taxonomy_event_listing_type_args(
-        array $args
-    ): array 
-    {
-        $rewrite = [
-            'slug' => 'events/type',
-            'with_front'   => false,
-            'hierarchical' => false
-        ];
-        $args['rewrite'] = $rewrite;
-        return $args;
-    }
-
-    public function filter_register_post_type_event_listing(
-        array $args
-    ): array {
-        $args['rewrite']['slug'] = 'events';
-        $args['has_archive'] = true;
-        return $args;
-    }
-
-    public function filter_event_manager_locate_template(
-        $template, $template_name, $template_path
-    ) {
-
-        // Look for tempaltes in theme on the passed path
-
-        $themeTemplate = locate_template([
-                trailingslashit($template_path) . $template_name,
-                $template_name
-        ]);
-
-        if($themeTemplate) {
-            return $themeTemplate;
+        if ($this->booted) {
+            return;
         }
-
-        // Get the template from the VMA plugin
-        $internal_path = $this->path . '/src/event-templates/';
-
-        $internalTemplate = trailingslashit($internal_path) . $template_name;
-
-        if (file_exists($internalTemplate)) {
-            return $internalTemplate;
-        }
-
-        // return what event manager found.
-        return $template;
-    }
-
-    public function action_plugins_loaded(): void
-    {
-        remove_filter(
-            'archive_template',
-            [WP_Event_Manager_Post_Types::instance(), 'event_archive'],
-        20);
-
-        add_filter(
-            'archive_template',
-            [$this, 'filter_archive_template'],
-        20, 3);
-
-        add_filter(
-            'single_template',
-            [$this, 'filter_single_template'],
-        20, 3);
-
-        add_action(
-            'wp_head', 
-            [$this, 'action_wp_head'],
-        PHP_INT_MAX);
-
-        // add_action(
-        //     'wp_enqueue_scripts',
-        //     [$this, 'action_wp_enqueue_scripts'],
-        // 50, 0);
-    }
-
-    public function filter_single_template(
-        string $template, string $type, array $templates
-    ): string 
-    {   
-        if (is_singular('event_listing')) {
-            $template = $this->path . '/src/event-templates/single-event_listing.php';
-        }
-        
-        return $template;
-    }
-
-
-    public function filter_archive_template(
-        string $template, string $type, array $templates
-    ): string
-    {
-		if (is_tax('event_listing_category')) {
-
-			$template = $this->path . '/src/event-templates/content-event_listing_category.php';
-	    }
-	    elseif (is_tax('event_listing_type')) {
-
-			$template = $this->path . '/src/event-templates/content-event_listing_type.php';
-	    }
-        elseif($templates[0] === 'archive-event_listing.php') {
-            $template = $this->path . '/src/event-templates/archive-event_listing.php';
-        }
-
-	    return $template;
-    }
-
-    // public function action_wp_enqueue_scripts(): void
-    // {
-    //     $url = wc_get_checkout_url();
-    //     wp_add_inline_script(
-    //         'wp-event-manager-sell-tickets-sell-ticket',
-    //         "event_manager_sell_tickets_sell_ticket.redirectUrl='$url'"
-    //     );
-    // }
-
-    public function action_wp_head(): void
-    {
-        wp_enqueue_style(
-            'vma-internal-frontend',
-            plugin_dir_url(__FILE__) . 'src/styles.css',
-            [],
-            static::VERSION
-        );
+        $this->booted = true;
     }
 
     public function action_init(): void
     {
+
         if (defined('KADENCE_VERSION')) {
-            include __DIR__ . '/src/KadenceTheme.php';
+            require __DIR__ . '/src/KadenceTheme.php';
+
             $kadence = new \VmaInternal\KadenceTheme();
             $kadence->register();
         };
+
+        add_filter('wp_headers', [$this, 'action_wp_headers']);
+    }
+
+
+    public function action_wp_headers(): array
+    {
+        $headers['X-Frame-Options'] = 'DENY';
+        $headers['X-Content-Type-Options'] = 'nosniff';
+        $headers['Referrer-Policy'] = 'strict-origin-when-cross-origin';
+        $headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains; preload';
+        $headers['Access-Control-Allow-Origin'] = WP_SITEURL;
+        $headers['Content-Security-Policy'] = preg_replace('/\n\s*/', " ", "
+            default-src 'self' 'unsafe-inline' *.googleapis.com *.gstatic.com;
+            object-src 'none';
+            base-uri 'self';
+            connect-src *;
+            frame-src 'self';
+            img-src * data:;
+            manifest-src 'self';
+            media-src 'self';
+            worker-src 'none';
+        ");
+        $headers['Cross-Origin-Opener-Policy'] = 'same-origin';
+        $headers['Cross-Origin-Resource-Policy'] = 'same-site';
+        $headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+        $headers['X-Powered-By'] = 'Ponies';
+
+        return $headers;
     }
 
     public function asset_url($file): string
     {
-        return plugin_dir_url(__FILE__) . 'assets/' . $file;
+        return plugin_dir_url($this->pluginPath) . 'assets/' . $file;
     }
 }
 
 
-function VmaInt(): Vma_Internal {
+function VmaInt(): Vma_Internal_Plugin {
     static $instance;
     if ($instance) {
         return $instance;
     }
 
-    $instance = Vma_Internal::bootstrap();
+    $instance = Vma_Internal_Plugin::bootstrap(__FILE__);
+    $instance->boot();
 
     return $instance;
 }

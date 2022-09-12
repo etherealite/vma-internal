@@ -9,7 +9,7 @@ global $wp_query;
 
 <style>
     .vma-event--after_style_load {
-        visibility: none;
+        visibility: hidden;
     }
 </style>
 <div class="vma-event-hero vma-event--after_style_load">
