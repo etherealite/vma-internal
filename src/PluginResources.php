@@ -9,12 +9,16 @@ class PluginResources {
     protected string $pluginPath;
     protected string $pluginDir;
     protected string $version;
+    protected string $privatePath;
+    private array $extensionFailures = [];
 
     public function __construct(Vma_Internal_Plugin $plugin) {
         $this->version = $plugin::VERSION;
         $pluginPath = $plugin->pluginPath();
         $this->pluginPath = $pluginPath;
         $this->pluginDir = dirname($pluginPath);
+        $this->privatePath = wp_get_upload_dir()['basedir'] . '/private';
+        $this->config = $this->readConfig();
     }
 
     public function pluginPath(): string
@@ -32,4 +36,46 @@ class PluginResources {
         return $this->version;
     }
 
+    public function readConfig(): array
+    {
+        return json_decode(
+            file_get_contents($this->privatePath . '/config.json'),
+            true
+        );
+    }
+
+    public function registerExtensionFailure($message): void
+    {
+        $this->extensionFailures[] = $message;
+        try {
+            throw new \Exception($message);
+        }
+        catch (\Throwable $e) {
+            if ( function_exists( 'wp_sentry_safe' ) ) {
+                wp_sentry_safe( function ( \Sentry\State\HubInterface $client ) use ( $e ) {
+                    $client->captureException( $e );
+                } );
+            }
+        }
+    }
+
+    public function extensionFailures(): array
+    {
+        return $this->extensionFailures;
+    }
+
+    public function config(): array
+    {
+        return $this->config;
+    }
+
+    public function optionEnvOverrides(): bool
+    {
+        return !get_option('vma_internal_env_overrides_disable', true);
+    }
+
+    public function optionEnvOverridesSet(bool $value): void
+    {
+        update_option('vma_internal_env_overrides_disable', $value, true);
+    }
 }

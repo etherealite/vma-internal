@@ -2,9 +2,28 @@
 
 namespace VmaInternal;
 
+use VmaInternal\PluginResources;
+
 class KadenceTheme {
-    public function register()
+
+    private PluginResources $pluginResources;
+
+    public function register(PluginResources $pluginResources)
     {
+        $this->pluginResources = $pluginResources;
+
+        add_action('init', fn() => $this->boot());
+    }
+
+    public function boot(): void
+    {
+        if (!defined('KADENCE_VERSION')) {
+            $this->pluginResources->registerExtensionFailure(
+                'Kadence theme not found, see ' .
+                '(https://wordpress.org/themes/kadence/)'
+            );
+            return;
+        }
         $this->template_hooks();
     }
 

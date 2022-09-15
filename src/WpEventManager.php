@@ -2,7 +2,7 @@
 
 namespace VmaInternal;
 
-use Vma_Internal_Plugin;
+use VmaInternal\PluginResources;
 
 use WP_Event_Manager_Post_Types;
 
@@ -12,6 +12,7 @@ class WpEventManager {
     private string $templatePath;
     private string $pluginVersion;
     private array $addons;
+    private PluginResources $pluginResources;
 
 
     public function register(PluginResources $pluginResources): void
@@ -20,15 +21,21 @@ class WpEventManager {
         $this->templatePath = $pluginResources->pluginDir()  . '/src/event-templates';
         $this->pluginVersion = $pluginResources->version();
 
-        add_action('plugins_loaded', function() {
-            if ($GLOBALS['event_manager'] ?? false) {
-                $this->boot();
-            }
-        });   
+        $this->pluginResources = $pluginResources;
+
+        add_action('plugins_loaded', fn() => $this->boot());  
     }
 
     public function boot(): void {
 
+        if (! class_exists('WP_Event_Manager')) {
+            $pluginResources = $this->pluginResources;
+            $pluginResources->registerExtensionFailure(
+                'WP Event Manager not found, see '. 
+                '(https://wordpress.org/plugins/wp-event-manager/)'
+            );
+            return;
+        }
         $this->bindAddons();
 
         $this->addons = [
