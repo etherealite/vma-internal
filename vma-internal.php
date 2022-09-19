@@ -3,12 +3,14 @@
  * Plugin Name: VMA Internal Plugin
  * Description: General purpose plugin for site specific integrations.
  * Author: Evan Bangham
- * Version: 0.0.8
+ * Version: 0.0.9
  * Author URI: https://github.com/etherealite
  *
  * Text Domain: VMA
  **/
 declare( strict_types = 1 );
+
+use PHPMailer\PHPMailer\PHPMailer;
 
 use VmaInternal\WpEventManager;
 use VmaInternal\PluginResources;
@@ -16,7 +18,7 @@ use VmaInternal\WpCli;
 
 class Vma_Internal_Plugin {
 
-    public const VERSION = '0.0.8';
+    public const VERSION = '0.0.9';
 
     protected bool $booted = false;
     private string $pluginPath;
@@ -45,6 +47,7 @@ class Vma_Internal_Plugin {
     {
         $pluginResources = new PluginResources($this);
         $this->pluginResources = $pluginResources;
+        $this->config = $pluginResources->config();
 
         $eventManager = new WpEventManager();
         $eventManager->register($pluginResources);
@@ -55,6 +58,7 @@ class Vma_Internal_Plugin {
         $authorizeDotNet = new \VmaInternal\AuthorizeDotNet();
         $authorizeDotNet->register($pluginResources);
 
+        $this->addPreInitHooks();
 
         add_action('plugins_loaded', [$this, 'action_plugins_loaded']);
         add_action('init', [$this, 'action_init']);
@@ -63,6 +67,11 @@ class Vma_Internal_Plugin {
             $commands = new WpCli($pluginResources);
             WP_CLI::add_command('vma', $commands);
         });
+    }
+
+    public function addPreInitHooks(): void
+    {
+        add_filter('phpmailer_init', [$this, 'filter_phpmailer_init']);
     }
 
     public function boot(): void
@@ -88,7 +97,25 @@ class Vma_Internal_Plugin {
     public function action_admin_init(): void
     {
         add_action('admin_notices', [$this, 'action_admin_notices']);
+    }
 
+    /**
+     * wp_mail() reconfigures phpmailer before every send,
+     * this must be an idempotent function
+     */
+    public function filter_phpmailer_init(PHPMailer $phpmailer): PHPMailer {
+
+        $config = $this->config['mail'];
+
+        $phpmailer->isSMTP();  // Set mailer to use SMTP
+        $phpmailer->Host = $config['host'];  // Specify mailgun SMTP servers
+        $phpmailer->Port = $config['port'];
+        $phpmailer->SMTPAuth = true; // Enable SMTP authentication
+        $phpmailer->Username = $config['username']; // SMTP username from https://mailgun.com/cp/domains
+        $phpmailer->Password = $config['password']; // SMTP password from https://mailgun.com/cp/domains
+        $phpmailer->SMTPSecure = 'tls';   // Enable encryption, 'ssl'
+    
+        return $phpmailer;
     }
 
     public function action_admin_notices(): void
@@ -143,12 +170,13 @@ class Vma_Internal_Plugin {
         ");
         $headers['Cross-Origin-Opener-Policy'] = 'same-origin';
         $headers['Cross-Origin-Resource-Policy'] = 'same-origin';
-        $headers['Cross-Origin-Embedder-Policy'] = 'require-corp';
+        $headers['Cross-Origin-Embedder-Policy'] = 'cross-origin';
         $headers['X-Powered-By'] = 'Ponies';
 
         return $headers;
     }
 
+    
     public function pluginPath(): string
     {
         return $this->pluginPath;

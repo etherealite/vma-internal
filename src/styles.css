@@ -13,6 +13,7 @@
     padding-top: 60px;
     background-position: bottom left;
     background-repeat: no-repeat;
+    background-color: white;
     opacity: 1;
     transition: background 0.3s, border-radius 0.3s, opacity 0.3s;
 }

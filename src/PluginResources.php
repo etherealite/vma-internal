@@ -10,7 +10,8 @@ class PluginResources {
     protected string $pluginDir;
     protected string $version;
     protected string $privatePath;
-    private array $extensionFailures = [];
+    protected array $config;
+    private array $extensionFailures;
 
     public function __construct(Vma_Internal_Plugin $plugin) {
         $this->version = $plugin::VERSION;
@@ -19,6 +20,7 @@ class PluginResources {
         $this->pluginDir = dirname($pluginPath);
         $this->privatePath = wp_get_upload_dir()['basedir'] . '/private';
         $this->config = $this->readConfig();
+        $this->extensionFailures = [];
     }
 
     public function pluginPath(): string
@@ -40,13 +42,20 @@ class PluginResources {
     {
         return json_decode(
             file_get_contents($this->privatePath . '/config.json'),
-            true
+            true,
+            512,
+            JSON_THROW_ON_ERROR
         );
     }
 
     public function registerExtensionFailure($message): void
     {
         $this->extensionFailures[] = $message;
+        $this->reportError($message);
+    }
+
+    public function reportError($message): void
+    {
         try {
             throw new \Exception($message);
         }

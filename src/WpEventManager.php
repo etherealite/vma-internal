@@ -63,25 +63,77 @@ class WpEventManager {
         }
 
         $this->overrideTemplates();
+        $this->patchZoomHooks();
     }
 
     public function bindAddons(): void
     {
         /** this is in load order */
-        $this->attendee_info ??= $GLOBALS['event_manager_attendee_information'];
-        $this->calendar ??= $GLOBALS['event_manager_calendar'];
-        $this->colors ??= $GLOBALS['event_manager_colors'];
-        $this->emails ??= $GLOBALS['event_manager_emails'];
-        $this->tags ??= $GLOBALS['event_manager_tags'];
-        $this->export ??= $GLOBALS['event_manager_export'];
-        $this->analytics ??= $GLOBALS['event_manager_google_analytics'];
-        $this->maps ??= $GLOBALS['WP_Event_Manager_Google_Maps'];
-        $this->recaptcha ??= $GLOBALS['event_manager_google_recaptcha'];
-        $this->mailChimp ??= $GLOBALS['event_manager_mailchimp'];
-        $this->registrations ??= $GLOBALS['event_manager_registrations'];
-        $this->sellTickets ??= $GLOBALS['event_manager_sell_tickets'];
-        $this->zoom ??= $GLOBALS['event_manager_zoom'];
-        $this->nameBadges ??= $GLOBALS['wpem_name_badges'];
+        $this->attendee_info = $GLOBALS['event_manager_attendee_information'] ?? null;
+        $this->calendar = $GLOBALS['event_manager_calendar'] ?? null;
+        $this->colors = $GLOBALS['event_manager_colors'] ?? null;
+        $this->emails = $GLOBALS['event_manager_emails'] ?? null;
+        $this->tags = $GLOBALS['event_manager_tags'] ?? null;
+        $this->export = $GLOBALS['event_manager_export'] ?? null;
+        $this->analytics = $GLOBALS['event_manager_google_analytics'] ?? null;
+        $this->maps = $GLOBALS['WP_Event_Manager_Google_Maps'] ?? null;
+        $this->recaptcha = $GLOBALS['event_manager_google_recaptcha'] ?? null;
+        $this->mailChimp = $GLOBALS['event_manager_mailchimp'] ?? null;
+        $this->registrations = $GLOBALS['event_manager_registrations'] ?? null;
+        $this->sellTickets = $GLOBALS['event_manager_sell_tickets'] ?? null;
+        $this->zoom = $GLOBALS['event_manager_zoom'] ?? null;
+        $this->nameBadges = $GLOBALS['wpem_name_badges'] ?? null;
+    }
+
+    /**
+     * Stop Zoom addon from flushing rewrite rules on every init
+     * 
+     * Prevents the WP Event Manager - Zoom addon from flushing rewrite rules
+     * on every request to wordpress.
+     * 
+     * Tested on Zoom addon version 1.0.8
+     */
+    public function patchZoomHooks(): void
+    {
+        global $wp_filter;
+
+        if (!$this->zoom) {
+            /** Addon not active */
+            return;
+        }
+        elseif (!class_exists('WPEM_Zoom_WooCommerce')) {
+            $this->pluginResources->reportError(
+                "Zoom addon active but WPEM_Zoom_WooCommerce class not available"
+            );
+            return;
+        }
+
+        $hook = $wp_filter['woocommerce_account_zoom-meeting_endpoint'] ?? null;
+        $callbacks = $hook->callbacks[10] ?? [];
+
+        $wooInstance = null;
+        foreach ($callbacks as $callback) {
+            if ($callback['function'][0] instanceof \WPEM_Zoom_WooCommerce) {
+                $wooInstance = $callback['function'][0];
+            }
+            break;
+        }
+
+
+        $removed = remove_action('init', [
+            $wooInstance, 'add_zoom_meeting_endpoint'
+        ]);
+
+        if ($removed) {
+            add_action('init',  function() {
+                add_rewrite_endpoint('zoom-meeting', EP_ROOT | EP_PAGES);
+            });
+        }
+        else {
+            $this->pluginResources->reportError(
+                "Unable able to remove WPEM_Zoom_WooCommerce init hook"
+            );
+        }
     }
 
     public function overrideTemplates(): void
