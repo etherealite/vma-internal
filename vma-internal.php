@@ -31,6 +31,7 @@ class Vma_Internal_Plugin {
 
     public static function bootstrap($pluginPath): self
     {
+        require __DIR__ . '/src/VmaInternalException.php';
         require __DIR__ . '/src/PluginResources.php';
         require __DIR__ . '/src/KadenceTheme.php';
         require __DIR__ . '/src/WpEventManager.php';
@@ -89,9 +90,17 @@ class Vma_Internal_Plugin {
 
     public function action_init(): void
     {
+        $this->secureHeaders();
+        add_filter('wp_revisions_to_keep', fn() => 10);
+        add_filter( 'wpseo_sitemap_exclude_post_type', function($exclude, $post_type) {
+            return $post_type === 'jet-menu';
+        }, 10, 2 );
+    }
+
+    public function secureHeaders(): void
+    {
         add_filter( 'x_redirect_by', '__return_false' );
         add_filter('wp_headers', [$this, 'action_wp_headers'], 0, 1);
-        add_filter('wp_revisions_to_keep', fn() => 10);
     }
     
     public function action_admin_init(): void

@@ -54,18 +54,19 @@ class PluginResources {
         $this->reportError($message);
     }
 
-    public function reportError($message): void
+    public function reportError($exception): void
     {
-        try {
-            throw new \Exception($message);
+        if (is_string($exception)) {
+            $exception = new \Exception($exception);
         }
-        catch (\Throwable $e) {
-            if ( function_exists( 'wp_sentry_safe' ) ) {
-                wp_sentry_safe( function ( \Sentry\State\HubInterface $client ) use ( $e ) {
-                    $client->captureException( $e );
-                } );
+        if (! function_exists('wp_sentry_safe')) {
+            return;
+        }
+        wp_sentry_safe(
+            function(\Sentry\State\HubInterface $client) use ($exception) {
+                $client->captureException($exception);
             }
-        }
+        );
     }
 
     public function extensionFailures(): array

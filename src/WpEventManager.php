@@ -3,6 +3,7 @@
 namespace VmaInternal;
 
 use VmaInternal\PluginResources;
+use VmaInternal\VmaInternalException;
 
 use WP_Event_Manager_Post_Types;
 
@@ -23,7 +24,10 @@ class WpEventManager {
 
         $this->pluginResources = $pluginResources;
 
-        add_action('plugins_loaded', fn() => $this->boot());  
+
+        add_shortcode('vma_events_redirect', [$this, 'shortcode']);
+
+        add_action('plugins_loaded', [$this, 'boot']);  
     }
 
     public function boot(): void {
@@ -63,7 +67,20 @@ class WpEventManager {
         }
 
         $this->overrideTemplates();
-        $this->patchZoomHooks();
+        $this->upcomingArchive();
+        // $this->applyQueryLogic();
+
+
+        try {
+            $this->patchZoomHooks();
+        }
+        catch (VmaInternalException $e) {
+            $this->pluginResources->reportError($e);
+        }
+
+        $this->disableGutenberg();
+
+        $this->preventIndexingSEO();
     }
 
     public function bindAddons(): void
@@ -102,10 +119,9 @@ class WpEventManager {
             return;
         }
         elseif (!class_exists('WPEM_Zoom_WooCommerce')) {
-            $this->pluginResources->reportError(
-                "Zoom addon active but WPEM_Zoom_WooCommerce class not available"
+            throw new VmaInternalException(
+                'Zoom addon active but WPEM_Zoom_WooCommerce class not available'
             );
-            return;
         }
 
         $hook = $wp_filter['woocommerce_account_zoom-meeting_endpoint'] ?? null;
@@ -130,11 +146,107 @@ class WpEventManager {
             });
         }
         else {
-            $this->pluginResources->reportError(
-                "Unable able to remove WPEM_Zoom_WooCommerce init hook"
+            throw new VmaInternalException(
+                'Unable able to remove WPEM_Zoom_WooCommerce init hook'
             );
         }
     }
+
+    public function disableGutenberg(): void
+    {
+        add_filter('use_block_editor_for_post_type', function($use_block_editor, $post_type) {
+            return $post_type === 'event_listing' ? false: $use_block_editor;
+        }, 10, 2);
+    }
+
+    public function upcomingArchive(): void
+    {
+        add_filter('query_vars', function($vars) {
+            $vars[] = 'vma_event_upcoming';
+            return $vars;
+        });
+
+        add_action('init', function() {
+            add_rewrite_rule('events/upcoming/?$', (
+                'index.php?'.
+                'post_type=event_listing&' .
+                'order=asc&' .
+                'orderby=event_start_date'
+            ),'top');
+        });
+
+        add_action('parse_query', function(\WP_QUERY $query) {
+            if (! (
+                // $query->is_main_query()
+                $query->is_post_type_archive('event_listing') || 
+                $query->is_tax('event_listing_category') ||
+                $query->is_tax('event_listing_type')  
+            )) {
+                return;
+            };
+    
+            $meta_query = array(
+                array(
+                    'relation' => 'OR',
+                    array(
+                        'key'     => '_event_start_date',
+                        'value'   => current_time('Y-m-d H:i:s'),
+                        'type'    => 'DATETIME',
+                        'compare' => '>='
+                    ),
+                    array(
+                        'key'     => '_event_end_date',
+                        'value'   => current_time('Y-m-d H:i:s'),
+                        'type'    => 'DATETIME',
+                        'compare' => '>='
+                    )
+                ),
+                [
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_event_start_date',
+                        'type'    => 'DATETIME',
+                        'compare' => 'EXISTS'                       
+                    ],
+                    [
+                        'key'     => '_event_end_date',
+                        'type'    => 'DATETIME',
+                        'compare' => 'EXISTS'                       
+                    ]
+                ]
+            );
+    
+            $hide_canceled = false;
+            if ($hide_canceled) {
+                $meta_query[] = array(
+                    'key'     => '_cancelled',
+                    'value'   => '1',
+                    'compare' => '!='
+                );
+            }
+
+    
+            if ($query->get('orderby') === 'event_start_date') {
+                $query->set('orderby', 'meta_value');
+                $query->set('meta_type', 'DATETIME');
+                $query->set('meta_key', '_event_start_date');
+            }
+            $query->set('meta_query', $meta_query);
+            $query->set('posts_per_page', get_option('event_manager_per_page'));
+            $query->set('post_status', ['publish', 'expired']);
+        });
+    }
+
+    public function preventIndexingSEO(): void
+    {
+        add_filter('wp_sitemaps_taxonomies', function($taxonomies) {
+            return $taxonomies;
+        });
+    }
+    // public function applyQueryLogic(): void
+    // {
+    //     add_action('pre_get_posts', [$this, 'action_pre_get_posts']);
+    // }
 
     public function overrideTemplates(): void
     {
@@ -209,6 +321,78 @@ class WpEventManager {
         }, -1);
     }
 
+    public function shortcode($atts): void
+    {
+        if ($atts['page'] ?? null) {
+            $redirect = get_post_type_archive_link('event_listing');
+        }
+        else {
+            $redirect = null;
+        }
+        if (!$redirect) {
+            return;
+        }
+        ob_start();
+        ?>
+        <meta http-equiv="refresh" content="0; url=<?php echo $redirect; ?>">
+            Please wait while you are redirected...or <a href="<?php echo $redirect; ?>">Click Here</a> if you do not want to wait.
+        <?php
+        ob_get_clean();
+    }
+
+    /**
+     * @todo unused cruft
+     */
+    public function action_pre_get_posts($query): void
+    {
+        if (! (
+            $query->is_main_query()
+            && $query->is_post_type_archive('event_listing')
+            || $query->is_tax('event_listing_category')
+            || $query->is_tax('event_listing_type')
+        )) {
+            return;
+        };
+
+
+
+        $meta_query = array(
+			array(
+				'relation' => 'OR',
+				array(
+					'key'     => '_event_start_date',
+					'value'   => current_time('Y-m-d H:i:s'),
+					'type'    => 'DATETIME',
+					'compare' => '>='
+				),
+				array(
+					'key'     => '_event_end_date',
+					'value'   => current_time('Y-m-d H:i:s'),
+					'type'    => 'DATETIME',
+					'compare' => '>='
+				)
+
+			),
+
+	    );
+
+        $hide_canceled = false;
+        if ($hide_canceled) {
+            $meta_query[] = array(
+				'key'     => '_cancelled',
+				'value'   => '1',
+				'compare' => '!='
+			);
+        }
+
+        $query->set('meta_query', $meta_query);
+        $query->set('posts_per_page', get_option('event_manager_per_page'));
+        $query->set('order', 'DESC');
+        $query->set('orderby', 'meta_value');
+        $query->set('meta_key', '_event_start_date');
+        $query->set('meta_type', 'DATETIME');
+    }
+
     public function filter_single_template(
         string $template, string $type, array $templates
     ): string 
@@ -280,6 +464,7 @@ class WpEventManager {
         array $args
     ): array {
         $args['rewrite']['slug'] = 'events';
+        $args['rewrite']['pages'] = true;
         $args['has_archive'] = true;
         return $args;
     }
